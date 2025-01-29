@@ -3,7 +3,12 @@ package notification
 import "time"
 
 type Repository interface {
-	SaveNotification(notification *Notification) error
+	FindAllNotifications() ([]Notification, error)
+	FindNotificationByID(id int) (*Notification, error)
 	FindScheduledNotifications(now time.Time) ([]Notification, error)
+	FindPendingNotifications(now time.Time) ([]Notification, error)
+	SaveNotification(notification *Notification) error
+	UpdateNotification(id int, notification *Notification) error
 	UpdateNotificationStatus(id int, status string) error
+	DeleteNotification(id int) error
 }

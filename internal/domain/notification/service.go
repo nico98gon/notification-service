@@ -17,6 +17,14 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
+func (s *Service) GetAllNotifications() ([]Notification, error) {
+	return s.repo.FindAllNotifications()
+}
+
+func (s *Service) GetNotificationByID(id int) (*Notification, error) {
+	return s.repo.FindNotificationByID(id)
+}
+
 func (s *Service) ScheduleNotification(userID int, notification *Notification) error {
 	return s.repo.SaveNotification(notification)
 }
@@ -39,6 +47,18 @@ func (s *Service) ProcessEvent(event NotificationEvent) error {
 
 	log.Printf("Notificación programada para el usuario %d", event.UserID)
 	return nil
+}
+
+func (s *Service) UpdateNotification(id int, notification *Notification) error {
+	if err := notification.Validate(); err != nil {
+		return err
+	}
+
+	return s.repo.UpdateNotification(id, notification)
+}
+
+func (s *Service) DeleteNotification(id int) error {
+	return s.repo.DeleteNotification(id)
 }
 
 func (s *Service) CheckAndSendNotifications(sender NotificationSender) error {
