@@ -8,3 +8,10 @@ tmp_dir = "tmp"
   delay = 1000
 [log]
   color = "true"
+excludes = [
+  "tmp",
+  "*.tmp",
+  ".env",
+  ".dockerignore",
+  ".git",
+]

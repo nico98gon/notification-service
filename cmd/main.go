@@ -3,13 +3,42 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"nilus-challenge-backend/internal/domain/notification"
+	"nilus-challenge-backend/internal/infrastructure"
+	"nilus-challenge-backend/internal/infrastructure/messaging"
+	"nilus-challenge-backend/internal/infrastructure/repository"
+	"time"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "¡Servicio de notificaciones en funcionamiento!")
-	})
+	db := infrastructure.NewDBConnection()
+	defer db.Close()
+
+	notificationPostgresRepo := repository.NewPostgresNotificationRepository(db)
+	notificationService := notification.NewService(notificationPostgresRepo)
+	fmt.Println(notificationPostgresRepo)
+
+	webSocketSender := messaging.NewWebSocketSender()
+	infrastructure.NewRouter(notificationService)
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			err := notificationService.CheckAndSendNotifications(webSocketSender)
+			if err != nil {
+				log.Printf("Error al enviar notificaciones: %v", err)
+			}
+		}
+	}()
+
+	// consumer := messaging.NewConsumer("localhost:9092", "notifications", "notification-group")
+	// err := consumer.StartProcessing(notificationService.ProcessEvent)
+	// if err != nil {
+	// 	log.Fatalf("Error al iniciar el consumidor: %v", err)
+	// }
 
 	http.HandleFunc("/weather", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := http.Get("http://weather-service:8083/")
