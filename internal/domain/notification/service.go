@@ -1,7 +1,13 @@
 package notification
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"nilus-challenge-backend/internal/infrastructure/services"
+	"strconv"
 	"time"
 )
 
@@ -32,8 +38,8 @@ func (s *Service) ScheduleNotification(userID int, notification *Notification) e
 func (s *Service) ProcessEvent(event NotificationEvent) error {
 	notification := &Notification{
 		UserID:    event.UserID,
-		Title:     event.Title,
-		Content:   event.Content,
+		Title:     &event.Title,
+		Content:   &event.Content,
 		Scheduled: event.Scheduled,
 	}
 
@@ -63,27 +69,61 @@ func (s *Service) DeleteNotification(id int) error {
 
 func (s *Service) CheckAndSendNotifications(sender NotificationSender) error {
 	now := time.Now()
-	notifications, err := s.repo.FindScheduledNotifications(now)
+
+	err := s.repo.MarkNotificationsAsPending(now)
+	if err != nil {
+		return fmt.Errorf("error al actualizar notificaciones pendientes: %v", err)
+	}
+
+	notifications, err := s.repo.FindPendingNotifications(now) 
 	if err != nil {
 		return err
 	}
 
 	for _, n := range notifications {
-		log.Printf("Enviando notificación: %+v\n", n)
+		log.Printf("Preparando notificación para el usuario %d\n", n.UserID)
 
-		// Intenta enviar la notificación por WebSocket
-		err := sender.Send(n)
+		cityID, err := strconv.Atoi(n.LocalityID)
 		if err != nil {
-			log.Printf("Error al enviar notificación por WebSocket (Usuario %d): %v", n.UserID, err)
-
-			// Si falla, podría quedarse en estado "SCHEDULED" o actualizarse a "PENDING"
+			log.Printf("Error al convertir cityID a int para el usuario %d: %v", n.UserID, err)
 			continue
 		}
 
-		// Si el envío fue exitoso, actualiza el estado a "SENT"
-		err = s.repo.UpdateNotificationStatus(n.Id, "SENT")
+		isCoastal := false
+		waveURL := fmt.Sprintf("http://weather-service:8083/wave-forecast?city_id=%s&day=0", cityID)
+		resp, err := http.Get(waveURL)
+		if err == nil {
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err == nil {
+				var waveData struct {
+					Status string `json:"status"`
+				}
+				err = json.Unmarshal(body, &waveData)
+				if err == nil && waveData.Status == "success" {
+					isCoastal = true
+				}
+			}
+		}
+
+		title, content, err := services.GetWeatherForecast(cityID, isCoastal)
 		if err != nil {
-			log.Printf("Error al actualizar el estado de la notificación ID %d: %v", n.Id, err)
+			log.Printf("Error al obtener el clima para el usuario %d: %v", n.UserID, err)
+			continue 
+		}
+
+		n.Title = &title
+		n.Content = &content
+
+		err = sender.Send(n)
+		if err != nil {
+			log.Printf("Error al enviar notificación (Usuario %d): %v", n.UserID, err)
+			continue
+		}
+
+		err = s.repo.SendAndMarkAsSent(n.Id) 
+		if err != nil {
+			log.Printf("Error al actualizar estado de la notificación ID %d: %v", n.Id, err)
 		}
 	}
 

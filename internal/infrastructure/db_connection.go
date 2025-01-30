@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"nilus-challenge-backend/internal/config"
 	infr_config "nilus-challenge-backend/internal/infrastructure/config"
@@ -13,6 +14,7 @@ import (
 
 func NewDBConnection() *sql.DB {
 	portAsString := os.Getenv("DB_PORT")
+	fmt.Println(portAsString)
 	if portAsString == "" {
 		portAsString = "5432"
 	}
@@ -31,7 +33,7 @@ func NewDBConnection() *sql.DB {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	infr_config.CreateUsersTable(db)
+	infr_config.CreateNotificationsTable(db)
 
 	return db
 }

@@ -6,56 +6,54 @@ import (
 	"log"
 )
 
-func CreateUsersTable(db *sql.DB) {
+func CreateNotificationsTable(db *sql.DB) {
 	query := `
-		CREATE TABLE IF NOT EXISTS users (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			email VARCHAR(255) NOT NULL UNIQUE,
-			opt_out BOOLEAN DEFAULT FALSE,
-			locality_id INT UNIQUE,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		CREATE TABLE IF NOT EXISTS notifications (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL,
+		locality_id VARCHAR(255) NOT NULL,
+		status VARCHAR(50) NOT NULL,
+		title VARCHAR(255),
+		content TEXT,
+		scheduled TIMESTAMP NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 	`
 
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Fatalf("Error creando tabla de usuarios: %v", err)
+		log.Fatalf("Error creando la tabla de notificaciones: %v", err)
 	} else {
-		fmt.Println("Tabla `users` creada con éxito.")
+		fmt.Println("Tabla `notifications` creada con éxito.")
 	}
 
-	checkQuery := `SELECT COUNT(*) FROM users`
+	// Verificar si hay datos en la tabla
+	checkQuery := `SELECT COUNT(*) FROM notifications`
 	var count int
 	err = db.QueryRow(checkQuery).Scan(&count)
 	if err != nil {
-		log.Fatalf("Error checkeando la tabla de usuarios: %v", err)
+		log.Fatalf("Error al verificar la tabla de notificaciones: %v", err)
 	}
 
+	// Si no hay notificaciones, insertar algunas por defecto
 	if count == 0 {
-		fmt.Println("No se encontró usuarios en la tabla `users`. Insertando usuarios por defecto...")
+		fmt.Println("No se encontró ninguna notificación. Insertando algunas por defecto...")
 
 		insertQuery := `
-			INSERT INTO users (name, email, opt_out)
-			VALUES
-				('Gonzalo Darín', 'gonza.darin@example.com', FALSE),
-				('Julieta Castaño', 'juli.castaño@example.com', TRUE),
-				('Fernando Martínez', 'fernando.Martinez@example.com', TRUE),
-				('Carla López', 'carla.lopez@example.com', FALSE),
-				('Lucas Fernández', 'lucas.fernandez@example.com', TRUE),
-				('María González', 'maria.gonzalez@example.com', FALSE),
-				('Santiago Ruiz', 'santiago.ruiz@example.com', TRUE),
-				('Camila Vega', 'camila.vega@example.com', FALSE),
-				('Martín Silva', 'martin.silva@example.com', TRUE)
+		INSERT INTO notifications (user_id, locality_id, status, scheduled)
+		VALUES
+			(1, '123', 'SCHEDULED', NOW() + INTERVAL '1 hour'),
+			(2, '456', 'PENDING', NOW() + INTERVAL '2 hour'),
+			(3, '789', 'SCHEDULED', NOW() + INTERVAL '3 hour')
 		`
+
 		_, err = db.Exec(insertQuery)
 		if err != nil {
-			log.Fatalf("Error insertando usuarios por defecto: %v", err)
+			log.Fatalf("Error insertando notificaciones por defecto: %v", err)
 		} else {
-			fmt.Println("Usuarios por defecto insertados con éxito.")
+			fmt.Println("Notificaciones por defecto insertadas con éxito.")
 		}
 	} else {
-		fmt.Printf("La tabla `users` tiene %d usuarios. No se agregaron usuarios por defecto.\n", count)
+		fmt.Printf("La tabla `notifications` tiene %d notificaciones. No se agregaron notificaciones por defecto.\n", count)
 	}
 }

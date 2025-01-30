@@ -11,4 +11,6 @@ type Repository interface {
 	UpdateNotification(id int, notification *Notification) error
 	UpdateNotificationStatus(id int, status string) error
 	DeleteNotification(id int) error
+	MarkNotificationsAsPending(now time.Time) error
+	SendAndMarkAsSent(id int) error
 }

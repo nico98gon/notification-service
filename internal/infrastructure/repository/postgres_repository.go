@@ -17,7 +17,7 @@ func NewPostgresNotificationRepository(db *sql.DB) *PostgresNotificationReposito
 }
 
 func (r *PostgresNotificationRepository) FindAllNotifications() ([]notification.Notification, error) {
-	query := `SELECT id, user_id, title, content, scheduled, status FROM notifications`
+	query := `SELECT id, user_id, locality_id, title, content, scheduled, status FROM notifications`
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (r *PostgresNotificationRepository) FindAllNotifications() ([]notification.
 	var notifications []notification.Notification
 	for rows.Next() {
 		var n notification.Notification
-		if err := rows.Scan(&n.Id, &n.UserID, &n.Title, &n.Content, &n.Scheduled, &n.Status); err != nil {
+		if err := rows.Scan(&n.Id, &n.UserID, &n.LocalityID, &n.Title, &n.Content, &n.Scheduled, &n.Status); err != nil {
 			return nil, err
 		}
 		notifications = append(notifications, n)
@@ -37,11 +37,11 @@ func (r *PostgresNotificationRepository) FindAllNotifications() ([]notification.
 }
 
 func (r *PostgresNotificationRepository) FindNotificationByID(id int) (*notification.Notification, error) {
-	query := `SELECT id, user_id, title, content, scheduled, status FROM notifications WHERE id = $1`
+	query := `SELECT id, user_id, locality_id, title, content, scheduled, status FROM notifications WHERE id = $1`
 	row := r.db.QueryRow(query, id)
 
 	var n notification.Notification
-	err := row.Scan(&n.Id, &n.UserID, &n.Title, &n.Content, &n.Scheduled, &n.Status)
+	err := row.Scan(&n.Id, &n.UserID, &n.LocalityID, &n.Title, &n.Content, &n.Scheduled, &n.Status)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("notificación con ID %d no encontrada", id)
@@ -53,7 +53,7 @@ func (r *PostgresNotificationRepository) FindNotificationByID(id int) (*notifica
 }
 
 func (r *PostgresNotificationRepository) FindScheduledNotifications(now time.Time) ([]notification.Notification, error) {
-	query := `SELECT id, user_id, title, content, scheduled FROM notifications WHERE scheduled <= $1 AND status = 'SCHEDULED'`
+	query := `SELECT id, user_id, locality_id, title, content, scheduled FROM notifications WHERE scheduled <= $1 AND status = 'SCHEDULED'`
 	rows, err := r.db.Query(query, now)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (r *PostgresNotificationRepository) FindScheduledNotifications(now time.Tim
 	var notifications []notification.Notification
 	for rows.Next() {
 		var n notification.Notification
-		if err := rows.Scan(&n.Id, &n.UserID, &n.Title, &n.Content, &n.Scheduled); err != nil {
+		if err := rows.Scan(&n.Id, &n.UserID, &n.LocalityID, &n.Title, &n.Content, &n.Scheduled); err != nil {
 			return nil, err
 		}
 		notifications = append(notifications, n)
@@ -94,8 +94,8 @@ func (r *PostgresNotificationRepository) FindPendingNotifications(now time.Time)
 }
 
 func (r *PostgresNotificationRepository) SaveNotification(n *notification.Notification) error {
-	query := `INSERT INTO notifications (user_id, title, content, scheduled, status) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Exec(query, n.UserID, n.Title, n.Content, n.Scheduled, "SCHEDULED")
+	query := `INSERT INTO notifications (user_id, locality_id, title, content, scheduled, status) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(query, n.UserID, n.LocalityID, n.Title, n.Content, n.Scheduled, "SCHEDULED")
 	if err != nil {
 		return err
 	}
@@ -103,8 +103,8 @@ func (r *PostgresNotificationRepository) SaveNotification(n *notification.Notifi
 }
 
 func (r *PostgresNotificationRepository) UpdateNotification(id int, n *notification.Notification) error {
-	query := `UPDATE notifications SET user_id = $1, title = $2, content = $3, scheduled = $4, status = $5 WHERE id = $6`
-	_, err := r.db.Exec(query, n.UserID, n.Title, n.Content, n.Scheduled, n.Status, id)
+	query := `UPDATE notifications SET user_id = $1, locality_id = $2, title = $3, content = $4, scheduled = $5, status = $6 WHERE id = $7`
+	_, err := r.db.Exec(query, n.UserID, n.LocalityID, n.Title, n.Content, n.Scheduled, n.Status, id)
 	if err != nil {
 		return err
 	}
@@ -124,3 +124,16 @@ func (r *PostgresNotificationRepository) DeleteNotification(id int) error {
 	}
 	return nil
 }
+
+func (r *PostgresNotificationRepository) MarkNotificationsAsPending(now time.Time) error {
+	query := `UPDATE notifications SET status = 'PENDING' WHERE scheduled <= $1 AND status = 'SCHEDULED'`
+	_, err := r.db.Exec(query, now)
+	return err
+}
+
+func (r *PostgresNotificationRepository) SendAndMarkAsSent(id int) error {
+	query := `UPDATE notifications SET status = 'SENT' WHERE id = $1`
+	_, err := r.db.Exec(query, id)
+	return err
+}
+

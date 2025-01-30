@@ -1,0 +1,120 @@
+{
+	"info": {
+		"_postman_id": "7895572f-d160-48f6-92c0-979273386216",
+		"name": "notification-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "41573800",
+		"_collection_link": "https://nilus-challenge-14.postman.co/workspace/fff9d9db-c41e-4884-8783-e8f70921217d/collection/41573800-7895572f-d160-48f6-92c0-979273386216?action=share&source=collection_link&creator=41573800"
+	},
+	"item": [
+		{
+			"name": "All Notifications",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{notification-service-url}}/notification",
+					"host": [
+						"{{notification-service-url}}"
+					],
+					"path": [
+						"notification"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Notification by Id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{notification-service-url}}/notification/2",
+					"host": [
+						"{{notification-service-url}}"
+					],
+					"path": [
+						"notification",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Notification",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": 1,\n    \"locality_id\": \"241\",\n    \"scheduled\": \"2025-08-29T16:00:00Z\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{notification-service-url}}/notification",
+					"host": [
+						"{{notification-service-url}}"
+					],
+					"path": [
+						"notification"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Edit Notification",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"user_id\": 2,\n    \"locality_id\": \"241\",\n    \"status\": \"SCHEDULED\",\n    \"scheduled\": \"2025-02-01T10:00:00Z\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{notification-service-url}}/notification/2",
+					"host": [
+						"{{notification-service-url}}"
+					],
+					"path": [
+						"notification",
+						"2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Notification",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{notification-service-url}}/notification/5",
+					"host": [
+						"{{notification-service-url}}"
+					],
+					"path": [
+						"notification",
+						"5"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

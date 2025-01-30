@@ -6,13 +6,14 @@ import (
 )
 
 type Notification struct {
-	Id        int       `json:"id"`
-	UserID    int       `json:"user_id"`
-	Status    string    `json:"status"` // "SCHEDULED", "SENT", "ERROR", "CANCELLED"
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	Scheduled time.Time `json:"scheduled"`
-	CreatedAt time.Time `json:"created_at"`
+	Id        	int       `json:"id"`
+	UserID    	int       `json:"user_id"`
+	LocalityID 	string    `json:"locality_id"`
+	Status    	string    `json:"status"`
+	Title     	*string   `json:"title,omitempty"`
+	Content   	*string   `json:"content,omitempty"`
+	Scheduled 	time.Time `json:"scheduled"`
+	CreatedAt 	time.Time `json:"created_at"`
 }	
 
 func (u *Notification) Validate() error {
@@ -20,15 +21,8 @@ func (u *Notification) Validate() error {
 		return errors.New("user_id es requerido")
 	}
 
-	if len(u.Title) == 0 {
-		return errors.New("titulo es requerido")
-	}
-	if len(u.Title) > 255 {
-		return errors.New("titulo no debe exceder 255 caracteres")
-	}
-
-	if len(u.Content) > 1000 {
-		return errors.New("contenido no debe exceder 1000 caracteres")
+	if u.LocalityID == "" {
+		return errors.New("locality_id es requerido")
 	}
 
 	if u.Scheduled.Before(time.Now()) {
